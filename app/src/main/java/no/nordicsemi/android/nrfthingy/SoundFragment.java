@@ -405,7 +405,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
     public void onResume() {
         super.onResume();
         for (BluetoothDevice thingy : mDevices) {
-//            ThingyListenerHelper.registerThingyListener(getContext(), mThingyListener, thingy); // TODO
+//            ThingyListenerHelper.registerThingyListener(getContext(), mThingyListener, thingy);
             LocalBroadcastManager.getInstance(requireContext()).registerReceiver(mAudioRecordBroadcastReceiver, createAudioRecordIntentFilter(thingy.getAddress()));
         }
     }
@@ -413,7 +413,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
     @Override
     public void onPause() {
         super.onPause();
-//        ThingyListenerHelper.unregisterThingyListener(getContext(), mThingyListener); // TODO
+//        ThingyListenerHelper.unregisterThingyListener(getContext(), mThingyListener);
         LocalBroadcastManager.getInstance(requireContext()).unregisterReceiver(mAudioRecordBroadcastReceiver);
         mVoiceVisualizer.stopDrawing();
     }
@@ -680,7 +680,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
         @NonNull
         @Override
         public Fragment getItem(int position) {
-            return FrequencyModeFragment.newInstance(mDevices); // Todo: hack
+            return FrequencyModeFragment.newInstance(mDevices);
         }
 
         @Override
@@ -758,7 +758,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                                     });
 
                                     orchestrator.put(loud, device);
-                                    buf = ByteBuffer.allocate(2000000); //goodluck garbage collector of android. //todo zero less
+                                    buf = ByteBuffer.allocate(2000000); //goodluck garbage collector of android. 
                                 }
                                 if (ticksFingerprint >= delayTicksFingerprint) {
                                     Log.i("CLAP-" + device.getName(), "Reinitializing the buffer");
