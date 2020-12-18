@@ -389,6 +389,10 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
         mClhIDInput.setText("2");
 
         loadFeatureDiscoverySequence();
+        FileHelper.copyAudioFiles(getContext());
+        File root = new File(String.valueOf(getActivity().getFilesDir()), "despacito_recorded.wav");
+        Wave waveA = new Wave(root.getAbsolutePath());
+        despacitoFingerprint = waveA.getFingerprint();
         return rootView;
     }
 
@@ -775,6 +779,13 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                                     buf = ByteBuffer.allocate(2000000); //goodluck garbage collector of android.
                                 }
                                 if (ticksFingerprint >= delayTicksFingerprint) {
+                                    //After 8 seconds, check for despacito
+                                    Wave waveRec = new Wave(new WaveHeader(), buf.array());
+                                    FingerprintSimilarity similarity = new FingerprintSimilarityComputer(despacitoFingerprint, waveRec.getFingerprint()).getFingerprintsSimilarity();
+                                    Log.i("MUSICG", "Clip is found at " + similarity.getsetMostSimilarTimePosition() + "s in " + "with similarity " + similarity.getSimilarity());
+                                    if( similarity.getSimilarity() > 0.25){
+                                        mClhLog.append("DESPACITO!\r\n");
+                                    }
                                     Log.i("CLAP-" + device.getName(), "Reinitializing the buffer");
                                     buf = ByteBuffer.allocate(2000000); //goodluck garbage collector of android.
                                     ticksFingerprint = 0;
