@@ -758,7 +758,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                                     });
 
                                     orchestrator.put(loud, device);
-                                    buf = ByteBuffer.allocate(2000000); //goodluck garbage collector of android. 
+                                    buf = ByteBuffer.allocate(2000000); //goodluck garbage collector of android.
                                 }
                                 if (ticksFingerprint >= delayTicksFingerprint) {
                                     Log.i("CLAP-" + device.getName(), "Reinitializing the buffer");
