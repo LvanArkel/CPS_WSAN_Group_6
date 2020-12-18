@@ -39,9 +39,11 @@
 package no.nordicsemi.android.nrfthingy;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
@@ -75,7 +77,12 @@ import androidx.viewpager.widget.ViewPager;
 import com.getkeepsafe.taptargetview.TapTarget;
 import com.getkeepsafe.taptargetview.TapTargetSequence;
 import com.google.android.material.tabs.TabLayout;
+import com.musicg.fingerprint.FingerprintSimilarity;
+import com.musicg.fingerprint.FingerprintSimilarityComputer;
+import com.musicg.wave.Wave;
+import com.musicg.wave.WaveHeader;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,9 +95,11 @@ import cps.wsan.audio.AmplitudeLoud;
 import cps.wsan.network.AdhocNetwork;
 import cps.wsan.network.MessageService;
 import cps.wsan.network.RoutingService;
+import no.nordicsemi.android.nrfthingy.common.FileHelper;
 import no.nordicsemi.android.nrfthingy.common.MessageDialogFragment;
 import no.nordicsemi.android.nrfthingy.common.PermissionRationaleDialogFragment;
 import no.nordicsemi.android.nrfthingy.common.Utils;
+import no.nordicsemi.android.nrfthingy.configuration.InitialConfigurationActivity;
 import no.nordicsemi.android.nrfthingy.database.DatabaseContract;
 import no.nordicsemi.android.nrfthingy.database.DatabaseHelper;
 import no.nordicsemi.android.nrfthingy.sound.FrequencyModeFragment;
@@ -106,6 +115,8 @@ import no.nordicsemi.android.thingylib.ThingyListenerHelper;
 import no.nordicsemi.android.thingylib.ThingySdkManager;
 import no.nordicsemi.android.thingylib.utils.ThingyUtils;
 
+import static no.nordicsemi.android.nrfthingy.common.Utils.REQUEST_ACCESS_FINE_LOCATION;
+import static no.nordicsemi.android.nrfthingy.common.Utils.showToast;
 import static no.nordicsemi.android.thingylib.utils.ThingyUtils.LED_GREEN;
 
 public class SoundFragment extends Fragment implements PermissionRationaleDialogFragment.PermissionDialogListener {
@@ -185,6 +196,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
     };
     private DatabaseHelper mDatabaseHelper;
     private ByteBuffer buf = ByteBuffer.allocate(2000000);
+    private byte[] despacitoFingerprint;
 
     public static SoundFragment newInstance(final BluetoothDevice device) {
         SoundFragment fragment = new SoundFragment();
@@ -234,6 +246,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                 mHandler.postDelayed(this, interval);
             }
         }, interval);
+
     }
 
     @Nullable
@@ -374,7 +387,6 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
             }
         });
         mClhIDInput.setText("2");
-
 
         loadFeatureDiscoverySequence();
         return rootView;
@@ -569,16 +581,18 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
             // Since Android 6.0 we need to obtain either Manifest.permission.ACCESS_FINE_LOCATION or Manifest.permission.ACCESS_FINE_LOCATION to be able to scan for
             // Bluetooth LE devices. This is related to beacons as proximity devices.
             // On API older than Marshmallow the following code does nothing.
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // When user pressed Deny and still wants to use this functionality, show the rationale
-                if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION)) {
-                    return;
+            int REQUEST_PERMISSION_REQ_CODE = 76;
+            if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(), Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+                    final PermissionRationaleDialogFragment dialog = PermissionRationaleDialogFragment.getInstance(Manifest.permission.ACCESS_BACKGROUND_LOCATION, REQUEST_ACCESS_FINE_LOCATION, getString(R.string.rationale_message_location));
+                    dialog.show(getFragmentManager(), null);
+                    requestPermissions(new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, REQUEST_PERMISSION_REQ_CODE);
+                } else {
+                    requestPermissions(new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, REQUEST_PERMISSION_REQ_CODE);
                 }
-                int REQUEST_PERMISSION_REQ_CODE = 76;
-                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSION_REQ_CODE);
+            } else {
                 return;
             }
-
             final BluetoothLeScannerCompat scanner = BluetoothLeScannerCompat.getScanner();
             final ScanSettings settings = new ScanSettings.Builder()
                     .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
@@ -727,7 +741,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
             }, 8000);
 
             final int delay = 1000; // 1000 milliseconds == 1 second
-            final int delayTicksFingerprint = 16;
+            final int delayTicksFingerprint = 8;
             handler.postDelayed(new Runnable() {
                 public void run() {
                     if (running) {
